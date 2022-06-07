@@ -5,6 +5,7 @@ using BankingCoreApi.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -24,16 +25,19 @@ namespace BankingCoreApi.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly BankingDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly TokenValidationParameters _tokenValidationParameters;
 
         public AuthenticationController(UserManager<User> userManager,
             RoleManager<IdentityRole> roleManager,
             BankingDbContext context,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            TokenValidationParameters tokenValidationParameters)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
             _configuration = configuration;
+            _tokenValidationParameters = tokenValidationParameters;
         }
 
         [HttpPost("register")]
@@ -85,13 +89,47 @@ namespace BankingCoreApi.Controllers
 
             if (userAvailable != null && await _userManager.CheckPasswordAsync(userAvailable, userDTO.Password.Cipher()))
             {
-                var token = await GenerateJwtToken(userAvailable);
+                var token = await GenerateJwtToken(userAvailable, null);
                 return Ok(token);
             }
             return Unauthorized();
         }
 
-        private async Task<TokenDTO> GenerateJwtToken(User user)
+        [HttpPost("refreshToken")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDTO rtDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return null;
+            }
+            var result = await GenerateRefreshToken(rtDTO);
+            return Ok(result);
+        }
+
+        private async Task<TokenDTO> GenerateRefreshToken(RefreshTokenDTO rtDTO)
+        {
+            var jwtTokenHandler = new JwtSecurityTokenHandler();
+            var refreshTokenInDb = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.Token == rtDTO.RefreshToken);
+            var user = await _userManager.FindByIdAsync(refreshTokenInDb.UserId);
+            try
+            {
+                var result = jwtTokenHandler.ValidateToken(rtDTO.Token, _tokenValidationParameters, out var validatedToken);
+                return await GenerateJwtToken(user, refreshTokenInDb);
+            }
+            catch (SecurityTokenExpiredException)
+            {
+                if(refreshTokenInDb.DateExpire >= DateTime.UtcNow)
+                {
+                    return await GenerateJwtToken(user, refreshTokenInDb);
+                }
+                else
+                {
+                    return await GenerateJwtToken(user, null);
+                }
+            }
+        }
+
+        private async Task<TokenDTO> GenerateJwtToken(User user, RefreshToken rToken)
         {
             List<Claim> userClaims = new List<Claim>()
             {
@@ -106,7 +144,7 @@ namespace BankingCoreApi.Controllers
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["JWT:Issuer"],
-                audience: _configuration["JWT: Audience"],
+                audience: _configuration["JWT:Audience"],
                 claims: userClaims,
                 expires: DateTime.UtcNow.AddMinutes(5),
                 signingCredentials: new SigningCredentials(loginKey, SecurityAlgorithms.HmacSha256)
@@ -114,9 +152,34 @@ namespace BankingCoreApi.Controllers
 
             var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
 
+            if(rToken != null)
+            {
+                var resultHere = new TokenDTO
+                {
+                    Token = jwtToken,
+                    RefreshToken = rToken.Token,
+                    ExiresAt = token.ValidTo
+                };
+                return resultHere;
+            }
+
+            var refreshToken = new RefreshToken()
+            {
+                JwtId = token.Id,
+                IsRevoked = false,
+                DateCreated = DateTime.UtcNow,
+                DateExpire = DateTime.UtcNow.AddMonths(2),
+                UserId = user.Id,
+                Token = Guid.NewGuid().ToString() + "-Suyash-Ujjay-" + Guid.NewGuid().ToString()
+            };
+
+            await _context.RefreshTokens.AddAsync(refreshToken);
+            await _context.SaveChangesAsync();
+
             var result = new TokenDTO
             {
                 Token = jwtToken,
+                RefreshToken = refreshToken.Token,
                 ExiresAt = token.ValidTo
             };
             return result;

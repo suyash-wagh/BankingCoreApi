@@ -34,6 +34,20 @@ namespace BankingCoreApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var tokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration["JWT:Secret"])),
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+
+                ValidIssuer = Configuration["JWT:Issuer"],
+                ValidAudience = Configuration["JWT:Audience"],
+                ClockSkew = TimeSpan.Zero
+            };
+
+            services.AddSingleton(tokenValidationParameters);
             services.AddDbContext<BankingDbContext>(options => options.UseSqlServer(ConnectionString));
 
             services.AddIdentity<User, IdentityRole>()
@@ -45,19 +59,11 @@ namespace BankingCoreApi
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+            }).AddJwtBearer("Bearer", options =>
             {
                 options.SaveToken = true;
                 options.RequireHttpsMetadata = false;
-                options.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration["JWT:Secret"])),
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidIssuer = Configuration["JWT:Issuer"],
-                    ValidAudience = Configuration["JWT:Audience"]
-                };
+                options.TokenValidationParameters = tokenValidationParameters;
 
             });
             services.AddControllers();
