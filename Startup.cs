@@ -92,6 +92,8 @@ namespace BankingCoreApi
             {
                 endpoints.MapControllers();
             });
+
+            RolesInitializer.AddRolesToDataBase(app).Wait();
         }
     }
 }

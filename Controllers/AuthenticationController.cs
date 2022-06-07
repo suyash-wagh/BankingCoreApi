@@ -73,7 +73,18 @@ namespace BankingCoreApi.Controllers
 
             var result = await _userManager.CreateAsync(user, userDTO.Password.Cipher());
 
-            if (result.Succeeded) return Ok("User Created.");
+            if (result.Succeeded)
+            {
+                if(userDTO.Role == Roles.User.ToString())
+                {
+                    await _userManager.AddToRoleAsync(user, Roles.User.ToString());
+                }
+                else if (userDTO.Role == Roles.Admin.ToString())
+                {
+                    await _userManager.AddToRoleAsync(user, Roles.Admin.ToString());
+                }
+                return Ok("User Created.");
+            }
             return BadRequest("User Could not be created.");
         }
 
@@ -139,6 +150,12 @@ namespace BankingCoreApi.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            foreach(var role in userRoles)
+            {
+                userClaims.Add(new Claim(ClaimTypes.Role, role.ToString()));
+            }
 
             var loginKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["JWT:Secret"]));
 
