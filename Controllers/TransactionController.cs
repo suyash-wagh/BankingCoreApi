@@ -11,14 +11,18 @@ namespace BankingCoreApi.Controllers
     [ApiController]
     public class TransactionController : ControllerBase
     {
-        
-        private readonly BankingDbContext db;
+        private readonly BankingDbContext _db;
 
-        [Authorize(Roles = Roles.User)]
+        public TransactionController(BankingDbContext db)
+        {
+            _db = db;
+        }
+
+        [Authorize(Roles = Roles.Admin)]
         [HttpGet("transactions")]
         public IActionResult get()
         {
-            return Ok("Authorized");
+            return Ok(_db.Transactions.ToList());
         }
     }
 }

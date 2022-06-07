@@ -46,7 +46,13 @@ namespace BankingCoreApi
                 ValidAudience = Configuration["JWT:Audience"],
                 ClockSkew = TimeSpan.Zero
             };
-
+            services.AddCors(options =>
+            {
+                options.AddPolicy("EnableCors", builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                });
+            });
             services.AddSingleton(tokenValidationParameters);
             services.AddDbContext<BankingDbContext>(options => options.UseSqlServer(ConnectionString));
 
@@ -66,7 +72,10 @@ namespace BankingCoreApi
                 options.TokenValidationParameters = tokenValidationParameters;
 
             });
-            services.AddControllers();
+            services.AddControllers(options =>
+            {
+                options.RespectBrowserAcceptHeader = true;
+            });
             services.AddSwaggerGen();
         }
 
@@ -79,6 +88,8 @@ namespace BankingCoreApi
             }
 
             app.UseRouting();
+
+            app.UseCors("EnableCors");
 
             app.UseAuthentication();
             

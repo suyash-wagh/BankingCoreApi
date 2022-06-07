@@ -66,7 +66,7 @@ namespace BankingCoreApi.Controllers
                     Email = userDTO.Email,
                     PasswordHash = userDTO.ConfirmPassword.Cipher(),
                     SecurityStamp = Guid.NewGuid().ToString(),
-                    UserName = userDTO.FirstName + userDTO.LastName
+                    UserName = userDTO.FirstName + userDTO.LastName + Guid.NewGuid().ToString()
                 };
             }
             else return BadRequest("Passwords doesn't match.");
@@ -78,6 +78,15 @@ namespace BankingCoreApi.Controllers
                 if(userDTO.Role == Roles.User.ToString())
                 {
                     await _userManager.AddToRoleAsync(user, Roles.User.ToString());
+                    _context.Transactions.Add(new Transaction()
+                    {
+                        Amount = userDTO.Balance,
+                        UserId = user.Id,
+                        User = user,
+                        Created = DateTime.UtcNow,
+                        TransactionType = "D"
+                    });
+                    _context.SaveChanges();
                 }
                 else if (userDTO.Role == Roles.Admin.ToString())
                 {
