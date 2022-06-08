@@ -42,11 +42,12 @@ namespace BankingCoreApi.Controllers
             return Ok(_service.GetAllById(userId));
         }
 
-        [Authorize(Roles = Roles.Admin + "," + Roles.User)]
-        [HttpPost("add")]
-        public void Post([FromBody] Transaction transaction)
+        [Authorize(Roles = Roles.User)]
+        [HttpPost("add/{userID}")]
+        public IActionResult Post([FromBody] Transaction transaction, [FromRoute] string userID)
         {
-            _service.Add(transaction);
+           _service.Add(userID, transaction);
+            return Ok("Transaction added");
         }
 
         [Authorize(Roles = Roles.Admin)]

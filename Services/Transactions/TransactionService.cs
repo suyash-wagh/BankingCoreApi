@@ -12,9 +12,9 @@ namespace BankingCoreApi.Services.Transactions
             _repo = repo;
         }
 
-        public void Add(Transaction transaction)
+        public void Add(string userID, Transaction transaction)
         {
-            _repo.Add(transaction);
+            _repo.Add(userID, transaction);
         }
 
         public void DeleteAll(string UserId)

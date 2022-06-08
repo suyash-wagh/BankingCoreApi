@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using BankingCoreApi.Models;
 using System.Linq;
+using System;
 
 namespace BankingCoreApi.Services.Transactions
 {
@@ -14,9 +15,31 @@ namespace BankingCoreApi.Services.Transactions
             _db = db;
         }
 
-        public void Add(Transaction transaction)
+        public void Add(string userID, Transaction transaction)
         {
-            _db.Transactions.Add(transaction);
+            var balance = _db.Users.Where(u => u.Id == userID).Select(u => u.Balance).First();
+            User user;
+
+            if (transaction.TransactionType == "D")
+            {
+                balance += Convert.ToInt32(transaction.Amount);
+                user = _db.Users.Find(userID);
+                user.Balance = balance;
+            }
+            else if(transaction.TransactionType == "W")
+            {
+                balance -= Convert.ToInt32(transaction.Amount);
+                user = _db.Users.Find(userID);
+                user.Balance = balance;
+            }
+
+            _db.Transactions.Add(new Transaction()
+            {
+                Amount = transaction.Amount,
+                Created = DateTime.UtcNow,
+                TransactionType = transaction.TransactionType,
+                UserId = userID,
+            });
             _db.SaveChanges();
         }
 
