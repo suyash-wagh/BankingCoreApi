@@ -30,10 +30,10 @@ namespace BankingCoreApi.Controllers
             }
             return Ok(_service.GetAll());
         }
-
-        [Authorize(Roles = Roles.Admin +","+ Roles.User)]
-        [HttpGet("getall/{id}")]
-        public IActionResult Get(string userId)
+        //Roles.Admin +","+
+        [Authorize(Roles = Roles.User)]
+        [HttpGet("getall/{userId}")]
+        public IActionResult Get([FromRoute] string userId)
         {
             if (!ModelState.IsValid)
             {

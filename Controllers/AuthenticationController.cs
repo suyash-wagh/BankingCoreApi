@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -105,7 +106,40 @@ namespace BankingCoreApi.Controllers
             {
                 return BadRequest("Please enter all details");
             }
+           
             var userAvailable = await _userManager.FindByEmailAsync(userDTO.Email);
+            var roleId = _context.UserRoles.Where(r => r.UserId == userAvailable.Id).Select(r => r.RoleId).SingleOrDefault();
+            var adminRoleId = _context.Roles.Where(r => r.Name == Roles.User).Select(r => r.Id).SingleOrDefault();
+
+            if (roleId != adminRoleId)
+            {
+                return Unauthorized();
+            }
+
+            if (userAvailable != null && await _userManager.CheckPasswordAsync(userAvailable, userDTO.Password.Cipher()))
+            {
+                var token = await GenerateJwtToken(userAvailable, null);
+                return Ok(token);
+            }
+            return Unauthorized();
+        }
+
+        [HttpPost("adminLogin")]
+        public async Task<IActionResult> AdmLogin([FromBody] UserLoginDTO userDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest("Please enter all details");
+            }
+            
+            var userAvailable = await _userManager.FindByEmailAsync(userDTO.Email);
+            var roleId = _context.UserRoles.Where(r => r.UserId == userAvailable.Id).Select(r => r.RoleId).SingleOrDefault();
+            var adminRoleId = _context.Roles.Where(r => r.Name == Roles.Admin).Select(r => r.Id).SingleOrDefault();
+            
+            if (roleId != adminRoleId)
+            {
+                return Unauthorized();
+            }
 
             if (userAvailable != null && await _userManager.CheckPasswordAsync(userAvailable, userDTO.Password.Cipher()))
             {
@@ -172,7 +206,7 @@ namespace BankingCoreApi.Controllers
                 issuer: _configuration["JWT:Issuer"],
                 audience: _configuration["JWT:Audience"],
                 claims: userClaims,
-                expires: DateTime.UtcNow.AddMinutes(5),
+                expires: DateTime.UtcNow.AddMinutes(10),
                 signingCredentials: new SigningCredentials(loginKey, SecurityAlgorithms.HmacSha256)
                 );
 
