@@ -11,7 +11,6 @@ namespace BankingCoreApi.DTOs
         [Required(ErrorMessage = "Please enter Amount")]
         [Range(500, 1000000, ErrorMessage = "The field {0} must be greater than {1}.")]
         public double Amount { get; set; }
-
         public string TransactionType { get; set; }
     }
 }

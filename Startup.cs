@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using BankingCoreApi.Services.Transactions;
 
 namespace BankingCoreApi
 {
@@ -53,7 +54,12 @@ namespace BankingCoreApi
                     builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
                 });
             });
+
             services.AddSingleton(tokenValidationParameters);
+            services.AddTransient<ITransactionRepository, TransactionRepository>();
+            services.AddTransient<ITransactionService, TransactionService>();
+            services.AddTransient<IBankDbContext, BankingDbContext>();
+
             services.AddDbContext<BankingDbContext>(options => options.UseSqlServer(ConnectionString));
 
             services.AddIdentity<User, IdentityRole>()

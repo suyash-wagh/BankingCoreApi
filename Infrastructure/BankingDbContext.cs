@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BankingCoreApi.Infrastructure
 {
-    public class BankingDbContext : IdentityDbContext<User>
+    public class BankingDbContext : IdentityDbContext<User>, IBankDbContext
     {
         public BankingDbContext(DbContextOptions<BankingDbContext> options) : base(options) { }
         
