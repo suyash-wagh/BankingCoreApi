@@ -67,7 +67,8 @@ namespace BankingCoreApi.Controllers
                     Email = userDTO.Email,
                     PasswordHash = userDTO.ConfirmPassword.Cipher(),
                     SecurityStamp = Guid.NewGuid().ToString(),
-                    UserName = userDTO.FirstName + userDTO.LastName + Guid.NewGuid().ToString()
+                    UserName = userDTO.FirstName + userDTO.LastName + Guid.NewGuid().ToString(),
+                    IsLocked = false
                 };
             }
             else return BadRequest("Passwords doesn't match.");
@@ -106,7 +107,7 @@ namespace BankingCoreApi.Controllers
             {
                 return BadRequest("Please enter all details");
             }
-           
+            
             var userAvailable = await _userManager.FindByEmailAsync(userDTO.Email);
             var roleId = _context.UserRoles.Where(r => r.UserId == userAvailable.Id).Select(r => r.RoleId).SingleOrDefault();
             var adminRoleId = _context.Roles.Where(r => r.Name == Roles.User).Select(r => r.Id).SingleOrDefault();
@@ -114,6 +115,11 @@ namespace BankingCoreApi.Controllers
             if (roleId != adminRoleId)
             {
                 return Unauthorized();
+            }
+
+            if (userAvailable.IsLocked)
+            {
+                return BadRequest("User is locked out.");
             }
 
             if (userAvailable != null && await _userManager.CheckPasswordAsync(userAvailable, userDTO.Password.Cipher()))
