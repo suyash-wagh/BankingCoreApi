@@ -20,7 +20,7 @@ namespace BankingCoreApi.Controllers
         }
         // GET: api/<UserController>
         [Authorize(Roles = Roles.Admin)]
-        [HttpGet]
+        [HttpGet("getUsers")]
         public IActionResult GetAllUsers()
         {
             return Ok(_db.Users.ToList());
@@ -34,22 +34,12 @@ namespace BankingCoreApi.Controllers
             return Ok(_db.Users.Where(u => u.Email == email).Select(u => u));
         }
 
-        // POST api/<UserController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<UserController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
         // DELETE api/<UserController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [Authorize(Roles = Roles.Admin)]
+        [HttpDelete("delete/{userID}")]
+        public void Delete(User user)
         {
+            _db.Users.Remove(user);
         }
     }
 }

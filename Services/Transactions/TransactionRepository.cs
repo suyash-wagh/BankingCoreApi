@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BankingCoreApi.Models;
 using System.Linq;
 using System;
+using BankingCoreApi.DTOs;
 
 namespace BankingCoreApi.Services.Transactions
 {
@@ -15,7 +16,7 @@ namespace BankingCoreApi.Services.Transactions
             _db = db;
         }
 
-        public void Add(string userID, Transaction transaction)
+        public void Add(string userID, TransactionDTO transaction)
         {
             var balance = _db.Users.Where(u => u.Id == userID).Select(u => u.Balance).First();
             User user;

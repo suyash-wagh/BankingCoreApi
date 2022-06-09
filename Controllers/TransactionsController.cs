@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using BankingCoreApi.Models;
+using BankingCoreApi.DTOs;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -44,7 +45,7 @@ namespace BankingCoreApi.Controllers
 
         [Authorize(Roles = Roles.User)]
         [HttpPost("add/{userID}")]
-        public IActionResult Post([FromBody] Transaction transaction, [FromRoute] string userID)
+        public IActionResult Post([FromBody] TransactionDTO transaction, string userID)
         {
            _service.Add(userID, transaction);
             return Ok("Transaction added");

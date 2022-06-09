@@ -1,4 +1,5 @@
-﻿using BankingCoreApi.Models;
+﻿using BankingCoreApi.DTOs;
+using BankingCoreApi.Models;
 using System.Collections.Generic;
 
 namespace BankingCoreApi.Services.Transactions
@@ -12,7 +13,7 @@ namespace BankingCoreApi.Services.Transactions
             _repo = repo;
         }
 
-        public void Add(string userID, Transaction transaction)
+        public void Add(string userID, TransactionDTO transaction)
         {
             _repo.Add(userID, transaction);
         }
